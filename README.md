@@ -1,9 +1,30 @@
 # 🛡️ SQLGuard ML (Machine Learning Injection Detector)
 
-![CI Status](https://github.com/Chiranth-Janardhan-moger/sqlguard-ml/actions/workflows/ci.yml/badge.svg)
-![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
-![npm version](https://img.shields.io/npm/v/sqlguard-ml?color=blue)
-![PyPI version](https://img.shields.io/pypi/v/sqlguard-ml?color=blue)
+<div align="center">
+  <img src="https://img.shields.io/npm/v/sqlguard-ml?color=blue&style=for-the-badge" alt="NPM Version">
+  <img src="https://img.shields.io/github/actions/workflow/status/Chiranth-Janardhan-moger/sqlguard-ml/ci.yml?branch=main&style=for-the-badge" alt="CI Status">
+  <img src="https://img.shields.io/npm/dt/sqlguard-ml?style=for-the-badge" alt="NPM Downloads">
+</div>
+
+> **Advanced ML-powered SQL Injection (SQLi) and Cross-Site Scripting (XSS) detection engine.** Includes a Node.js heuristic scanner, Express.js middleware, and a Python FastAPI detector for maximum web application security.
+
+## 🚀 Quick Start (Node.js)
+
+Install the package globally or in your project via NPM:
+
+```bash
+# To use as a CLI tool or middleware in your project
+npm install sqlguard-ml
+
+# To install globally for terminal usage anywhere
+npm install -g sqlguard-ml
+```
+
+See the [Usage](#-usage) section below for how to integrate it into Express.js!
+
+---
+
+## Overview
 
 **SQLGuard ML** is a powerful cybersecurity tool for detecting SQL Injection (SQLi) and Cross-Site Scripting (XSS) attacks in real-time. It provides a highly accurate **Machine Learning (CNN-LSTM)** Python package and a blazing fast **Heuristic-based** Node.js package.
 
