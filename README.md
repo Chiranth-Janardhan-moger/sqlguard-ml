@@ -120,10 +120,9 @@ Once installed via pip, the Python CLI is immediately available:
 # Detect attacks using the CLI
 sqlguard detect "admin' --"
 
-# Run the API and Web Dashboard
-uvicorn sqlguard_ml.api:app --reload
+# Run the Machine Learning API Backend
+uvicorn sqlguard_ml.api:app --port 8000
 ```
-Then visit `http://127.0.0.1:8000` to view the interactive web dashboard!
 
 ---
 
