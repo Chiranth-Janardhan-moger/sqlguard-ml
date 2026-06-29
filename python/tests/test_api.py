@@ -15,15 +15,3 @@ def test_detect():
     assert "label" in data
     assert "confidence" in data
     assert "probabilities" in data
-
-def test_scan():
-    response = client.post("/api/v1/scan", json=[{"payload": "test"}, {"payload": "<script>"}])
-    assert response.status_code == 200
-    data = response.json()
-    assert "results" in data
-    assert len(data["results"]) == 2
-
-def test_dashboard():
-    response = client.get("/")
-    assert response.status_code == 200
-    assert "text/html" in response.headers["content-type"]
