@@ -56,41 +56,55 @@ function expressMiddleware(options = {}) {
     console.warn(`[SQLGuard] Attack Blocked: ${label} from IP: ${ip} | Payload: ${payload}`);
   };
 
+  const deepScan = async (obj, ip) => {
+    if (!obj || typeof obj !== 'object') return false;
+    
+    for (const key of Object.keys(obj)) {
+      const val = obj[key];
+      if (typeof val === 'string') {
+        const result = detector.detect(val);
+        let finalLabel = result.label;
+        let isMalicious = result.label !== 'benign' && result.confidence >= threshold;
+
+        if (!isMalicious && result.confidence >= 0.2 && mlEndpoint) {
+          try {
+            const mlRes = await fetch(`${mlEndpoint}?payload=${encodeURIComponent(val)}`);
+            if (mlRes.ok) {
+              const mlData = await mlRes.json();
+              if (mlData.prediction && mlData.prediction !== 'benign') {
+                isMalicious = true;
+                finalLabel = mlData.prediction;
+              }
+            }
+          } catch (e) {}
+        }
+
+        if (isMalicious) {
+          logAttack(ip, val, finalLabel);
+          return { isMalicious: true, label: finalLabel };
+        }
+      } else if (typeof val === 'object' && val !== null) {
+        // Prevent infinite recursion by not deeply scanning massive objects
+        const nestedResult = await deepScan(val, ip);
+        if (nestedResult) return nestedResult;
+      }
+    }
+    return false;
+  };
+
   return async (req, res, next) => {
     const ip = req.ip || (req.connection && req.connection.remoteAddress) || 'unknown';
     const sources = [req.query, req.body, req.headers];
     
     for (const source of sources) {
       if (!source) continue;
-      for (const key of Object.keys(source)) {
-        const val = source[key];
-        if (typeof val === 'string') {
-          const result = detector.detect(val);
-          let finalLabel = result.label;
-          let isMalicious = result.label !== 'benign' && result.confidence >= threshold;
-
-          if (!isMalicious && result.confidence >= 0.2 && mlEndpoint) {
-            try {
-              const mlRes = await fetch(`${mlEndpoint}?payload=${encodeURIComponent(val)}`);
-              if (mlRes.ok) {
-                const mlData = await mlRes.json();
-                if (mlData.prediction && mlData.prediction !== 'benign') {
-                  isMalicious = true;
-                  finalLabel = mlData.prediction;
-                }
-              }
-            } catch (e) {}
-          }
-
-          if (isMalicious) {
-            logAttack(ip, val, finalLabel);
-            return res.status(403).json({
-              error: 'Forbidden',
-              message: 'Malicious payload detected by SQLGuard ML',
-              details: { label: finalLabel }
-            });
-          }
-        }
+      const attack = await deepScan(source, ip);
+      if (attack) {
+        return res.status(403).json({
+          error: 'Forbidden',
+          message: 'Malicious payload detected by SQLGuard ML',
+          details: { label: attack.label }
+        });
       }
     }
     next();
