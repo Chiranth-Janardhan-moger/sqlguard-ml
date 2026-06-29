@@ -28,6 +28,17 @@ See the [Usage](#-usage) section below for how to integrate it into Express.js!
 
 **SQLGuard ML** is a powerful cybersecurity tool for detecting SQL Injection (SQLi) and Cross-Site Scripting (XSS) attacks in real-time. It provides a highly accurate **Machine Learning (CNN-LSTM)** Python package and a blazing fast **Heuristic-based** Node.js package.
 
+
+
+## Features
+
+- **Hybrid AI Bridge**: Automatically queries the Python Machine Learning engine for a second opinion on borderline payloads to drastically reduce false positives.
+- **NoSQL Injection Detection**: Captures modern NoSQL injection attempts (e.g., MongoDB `$where`, `$ne`, `$gt`).
+- **Deep Payload Decoding**: Unravels multi-layer URL encoding, Hex, and Base64 payloads before scanning to catch obfuscated attacks.
+- **Express.js Middleware**: Plug-and-play middleware that automatically scans `req.query`, `req.body`, and `req.headers`.
+- **ReDoS Protection**: Enforces strict payload length caps to prevent Regular Expression Denial of Service.
+- **Dual Architecture**: Use the ultra-fast Node.js heuristics for high-throughput edge scanning, and the Python CNN-LSTM deep learning model for offline or API-based deep inspection.
+---
 ---
 
 ## Installation
@@ -81,8 +92,8 @@ console.log(result.label); // 'sqli'
 console.log(result.confidence);
 ```
 
-### Using as Express.js Middleware (New!)
-You can easily protect your Express.js applications by plugging in the `expressMiddleware`:
+### Using as Express.js Middleware (Advanced)
+You can easily protect your Express.js applications by plugging in the `expressMiddleware`. It supports a Hybrid AI bridge to reduce false positives.
 
 ```javascript
 const express = require('express');
@@ -90,8 +101,10 @@ const { expressMiddleware } = require('sqlguard-ml');
 
 const app = express();
 
-// Protects req.query, req.body, and req.headers automatically!
-app.use(expressMiddleware({ threshold: 0.5 }));
+app.use(expressMiddleware({
+  threshold: 0.5,
+  mlEndpoint: 'http://127.0.0.1:8000/api/detect' // Optional: Fallback to Python AI for borderline payloads
+}));
 
 app.get('/api/data', (req, res) => {
   res.send("If you see this, your request was safe!");
@@ -142,3 +155,6 @@ Contributions, issues, and feature requests are welcome! See [CONTRIBUTING.md](C
 
 ## License
 Copyright © 2026. This project is [MIT](LICENSE) licensed.
+
+
+

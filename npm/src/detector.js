@@ -3,7 +3,8 @@ class Detector {
     this.sqliPatterns = [
       /(?:')|(?:--)|(\b(SELECT|UNION|INSERT|UPDATE|DELETE|DROP|TRUNCATE)\b)/i,
       /(?:\b(OR|AND)\b\s+['"\d\w]+\s*[=<>]\s*['"\d\w]+)/i,
-      /;\s*(?:SLEEP|DELAY)\s*\(/i
+      /;\s*(?:SLEEP|DELAY)\s*\(/i,
+      /(?:\$where|\$ne|\$gt|\$lt|\$gte|\$lte|\$in|\$nin|\$regex)/i // NoSQLi
     ];
     this.xssPatterns = [
       /<script\b[^>]*>([\s\S]*?)<\/script>/i,
@@ -15,13 +16,11 @@ class Detector {
 
   decodeDeeply(payload) {
     if (typeof payload !== 'string') return '';
-    // Prevent ReDoS by capping length
     if (payload.length > 50000) payload = payload.substring(0, 50000);
     
     let decoded = payload;
     try { decoded = decodeURIComponent(decoded); } catch (e) {}
     
-    // Attempt basic Base64 decode if it matches base64 chars
     if (/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/.test(decoded)) {
       try {
         const b64Decoded = Buffer.from(decoded, 'base64').toString('utf8');
@@ -40,27 +39,25 @@ class Detector {
     const xssScore = this.xssPatterns.filter(p => p.test(decodedPayload)).length;
 
     const maxScore = Math.max(sqliScore, xssScore);
-    const confidence = Math.min(1.0, maxScore * 0.35); // simple heuristic confidence
+    const confidence = Math.min(1.0, maxScore * 0.35);
 
     const label = sqliScore > xssScore ? 'sqli' : xssScore > 0 ? 'xss' : 'benign';
 
-    return {
-      label,
-      confidence,
-      scores: {
-        sqli: sqliScore,
-        xss: xssScore
-      }
-    };
+    return { label, confidence, scores: { sqli: sqliScore, xss: xssScore } };
   }
 }
 
 function expressMiddleware(options = {}) {
   const detector = new Detector();
   const threshold = options.threshold || 0.5;
+  const mlEndpoint = options.mlEndpoint || null; 
 
-  return (req, res, next) => {
-    // Check query params, body, and headers
+  const logAttack = (ip, payload, label) => {
+    console.warn(`[SQLGuard] Attack Blocked: ${label} from IP: ${ip} | Payload: ${payload}`);
+  };
+
+  return async (req, res, next) => {
+    const ip = req.ip || (req.connection && req.connection.remoteAddress) || 'unknown';
     const sources = [req.query, req.body, req.headers];
     
     for (const source of sources) {
@@ -69,11 +66,28 @@ function expressMiddleware(options = {}) {
         const val = source[key];
         if (typeof val === 'string') {
           const result = detector.detect(val);
-          if (result.label !== 'benign' && result.confidence >= threshold) {
+          let finalLabel = result.label;
+          let isMalicious = result.label !== 'benign' && result.confidence >= threshold;
+
+          if (!isMalicious && result.confidence >= 0.2 && mlEndpoint) {
+            try {
+              const mlRes = await fetch(`${mlEndpoint}?payload=${encodeURIComponent(val)}`);
+              if (mlRes.ok) {
+                const mlData = await mlRes.json();
+                if (mlData.prediction && mlData.prediction !== 'benign') {
+                  isMalicious = true;
+                  finalLabel = mlData.prediction;
+                }
+              }
+            } catch (e) {}
+          }
+
+          if (isMalicious) {
+            logAttack(ip, val, finalLabel);
             return res.status(403).json({
               error: 'Forbidden',
               message: 'Malicious payload detected by SQLGuard ML',
-              details: { label: result.label }
+              details: { label: finalLabel }
             });
           }
         }
