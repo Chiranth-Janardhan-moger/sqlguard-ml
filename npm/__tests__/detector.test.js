@@ -24,4 +24,24 @@ describe('Detector', () => {
     expect(result.label).toBe('xss');
     expect(result.confidence).toBeGreaterThan(0);
   });
+
+  test('should not false positive on bare single quote or names', () => {
+    const result1 = detector.detect("O'Brien");
+    const result2 = detector.detect("SELECT * FROM users WHERE name = 'test'");
+    expect(result1.label).toBe('benign');
+    expect(result2.label).toBe('benign');
+  });
+
+  test('should detect comment obfuscated SQLi bypasses', () => {
+    const result = detector.detect("UN/**/ION SEL/**/ECT * FROM users");
+    expect(result.label).toBe('sqli');
+    expect(result.confidence).toBeGreaterThan(0);
+  });
+
+  test('should detect multi-encoded payloads', () => {
+    // %253Cscript%253Ealert(1)%253C%252Fscript%253E -> %3Cscript%3E... -> <script>...
+    const result = detector.detect('%253Cscript%253Ealert(1)%253C%252Fscript%253E');
+    expect(result.label).toBe('xss');
+    expect(result.confidence).toBeGreaterThan(0);
+  });
 });

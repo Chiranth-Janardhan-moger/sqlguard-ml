@@ -1,10 +1,12 @@
 class Detector {
   constructor() {
     this.sqliPatterns = [
-      /(?:')|(?:--)|(\b(SELECT|UNION|INSERT|UPDATE|DELETE|DROP|TRUNCATE)\b)/i,
-      /(?:\b(OR|AND)\b\s+['"\d\w]+\s*[=<>]\s*['"\d\w]+)/i,
-      /;\s*(?:SLEEP|DELAY)\s*\(/i,
-      /(?:\$where|\$ne|\$gt|\$lt|\$gte|\$lte|\$in|\$nin|\$regex)/i
+      // Fixed: Removed bare single quote. Using more robust patterns.
+      /(?:\b(?:OR|AND)\b\s+['"\d\w]+\s*[=<>]\s*['"\d\w]+)/i,
+      /\b(?:UNION\s+(?:ALL\s+)?SELECT|DROP\s+TABLE|INSERT\s+INTO|UPDATE\s+\w+\s+SET)\b/i,
+      /;\s*(?:SLEEP|DELAY|WAITFOR)\s*(?:\(|\s)/i,
+      /(?:\$where|\$ne|\$gt|\$lt|\$gte|\$lte|\$in|\$nin|\$regex)/i,
+      /['"]\s*=\s*['"]/i
     ];
     this.xssPatterns = [
       /<script\b[^>]*>([\s\S]*?)<\/script>/i,
@@ -17,8 +19,15 @@ class Detector {
   decodeDeeply(payload) {
     if (typeof payload !== 'string') return '';
     if (payload.length > 50000) payload = payload.substring(0, 50000);
+    // Iterate decoding to catch multi-layer encoding
     let decoded = payload;
-    try { decoded = decodeURIComponent(decoded); } catch (e) {}
+    let previous = "";
+    let iterations = 0;
+    while (decoded !== previous && iterations < 5) {
+      previous = decoded;
+      try { decoded = decodeURIComponent(decoded); } catch (e) {}
+      iterations++;
+    }
     if (/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/.test(decoded)) {
       try {
         const b64Decoded = Buffer.from(decoded, 'base64').toString('utf8');
@@ -27,6 +36,8 @@ class Detector {
         }
       } catch (e) {}
     }
+    // Remove SQL inline comments (e.g. /**/) to prevent UN/**/ION bypasses
+    decoded = decoded.replace(/\/\*[\s\S]*?\*\//g, '');
     return decoded;
   }
 

@@ -3,21 +3,16 @@
 <div align="center">
   <img src="https://img.shields.io/npm/v/sqlguard-ml?color=blue&style=for-the-badge" alt="NPM Version">
   <img src="https://img.shields.io/github/actions/workflow/status/Chiranth-Janardhan-moger/sqlguard-ml/ci.yml?branch=main&style=for-the-badge" alt="CI Status">
-  <img src="https://img.shields.io/npm/dt/sqlguard-ml?style=for-the-badge" alt="NPM Downloads">
 </div>
 
-> **Advanced ML-powered SQL Injection (SQLi) and Cross-Site Scripting (XSS) detection engine.** Includes a Node.js heuristic scanner, Express.js middleware, and a Python FastAPI detector for maximum web application security.
+> **Hybrid SQL Injection (SQLi) and Cross-Site Scripting (XSS) detection engine.** Includes a Node.js heuristic scanner and an Express.js middleware that can bridge to a local Python FastAPI Machine Learning service.
 
 ## Quick Start (Node.js)
 
-Install the package globally or in your project via NPM:
+Install the package via NPM:
 
 ```bash
-# To use as a CLI tool or middleware in your project
 npm install sqlguard-ml
-
-# To install globally for terminal usage anywhere
-npm install -g sqlguard-ml
 ```
 
 See the [Usage](#-usage) section below for how to integrate it into Express.js!
@@ -26,42 +21,37 @@ See the [Usage](#-usage) section below for how to integrate it into Express.js!
 
 ## Overview
 
-**SQLGuard ML** is a powerful cybersecurity tool for detecting SQL Injection (SQLi) and Cross-Site Scripting (XSS) attacks in real-time. It provides a highly accurate **Machine Learning (CNN-LSTM)** Python package and a blazing fast **Heuristic-based** Node.js package.
-
-
+**SQLGuard ML** is a cybersecurity tool for detecting SQL Injection (SQLi) and Cross-Site Scripting (XSS). 
+The Node.js package (`npm`) operates using a fast heuristic (regex-based) scanner. If you need a Machine Learning second opinion for borderline payloads, you can spin up the included Python FastAPI server locally to run the CNN-LSTM deep learning model.
 
 ## Features
 
-- **Hybrid AI Bridge**: Automatically queries the Python Machine Learning engine for a second opinion on borderline payloads to drastically reduce false positives.
-- **NoSQL Injection Detection**: Captures modern NoSQL injection attempts (e.g., MongoDB `$where`, `$ne`, `$gt`).
+- **Hybrid AI Bridge**: Automatically queries a local Python Machine Learning engine for a second opinion on borderline payloads to reduce false positives (requires running the Python server).
 - **Deep Payload Decoding**: Unravels multi-layer URL encoding, Hex, and Base64 payloads before scanning to catch obfuscated attacks.
 - **Express.js Middleware**: Plug-and-play middleware that automatically scans `req.query`, `req.body`, and `req.headers`.
 - **ReDoS Protection**: Enforces strict payload length caps to prevent Regular Expression Denial of Service.
-- **Dual Architecture**: Use the ultra-fast Node.js heuristics for high-throughput edge scanning, and the Python CNN-LSTM deep learning model for offline or API-based deep inspection.
----
+- **Comment Stripping**: Removes SQL inline comments to prevent common obfuscation bypasses (e.g. `UN/**/ION`).
+
 ---
 
 ## Installation
 
-SQLGuard ML is designed to be easily installable via your favorite package managers!
-
 ### Node.js / NPM (Heuristic Scanner)
-To install the fast heuristic CLI and NPM library globally:
 
-```bash
-npm install -g sqlguard-ml
-```
-
-Or install it as a dependency in your project:
+To install the heuristic library in your project:
 ```bash
 npm install sqlguard-ml
 ```
 
-### Python / PyPI (Machine Learning Detector)
-To install the deep-learning based detector and CLI:
+### Python (Machine Learning Detector)
+
+Currently, the `sqlguard-ml` Python package is **not published to PyPI**. You must build and install it locally from this repository if you wish to run the ML backend.
 
 ```bash
-pip install sqlguard-ml
+cd python
+python -m venv .venv
+source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+pip install -e .
 ```
 
 *(Note: Ensure you are using Python 3.10+ for full TensorFlow compatibility).*
