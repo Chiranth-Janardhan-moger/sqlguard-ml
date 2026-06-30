@@ -6,7 +6,9 @@ class Detector {
       /\b(?:UNION\s+(?:ALL\s+)?SELECT|DROP\s+TABLE|INSERT\s+INTO|UPDATE\s+\w+\s+SET)\b/i,
       /;\s*(?:SLEEP|DELAY|WAITFOR)\s*(?:\(|\s)/i,
       /(?:\$where|\$ne|\$gt|\$lt|\$gte|\$lte|\$in|\$nin|\$regex)/i,
-      /['"]\s*=\s*['"]/i
+      /['"]\s*=\s*['"]/i,
+      // Catch comment-terminated auth bypasses (e.g., admin'--, admin' #)
+      /(?:['"]\s*(?:--|#)(?:\s|$))/i
     ];
     this.xssPatterns = [
       /<script\b[^>]*>([\s\S]*?)<\/script>/i,

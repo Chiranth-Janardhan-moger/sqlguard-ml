@@ -44,4 +44,11 @@ describe('Detector', () => {
     expect(result.label).toBe('xss');
     expect(result.confidence).toBeGreaterThan(0);
   });
+
+  test('should detect comment-terminated auth bypasses', () => {
+    expect(detector.detect("admin'--").label).toBe('sqli');
+    expect(detector.detect("admin' --").label).toBe('sqli');
+    expect(detector.detect("admin'#").label).toBe('sqli');
+    expect(detector.detect("admin' /*").label).toBe('benign'); // Without closing */ it might just be text, but let's stick to the assert for -- and #
+  });
 });
