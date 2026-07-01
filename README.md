@@ -37,6 +37,7 @@ The Node.js package (`npm`) operates using a fast heuristic (regex-based) scanne
 ## Architectural Limitations (Please Read)
 
 - **Rate Limiting in PM2/Kubernetes**: The IP rate limiter runs in-process via an in-memory Map. This means it **resets on every server restart** and **does not share state across multiple Node processes**. If you are running PM2 clusters, Kubernetes pods, or any multi-instance deployment, rate limiting will be silently isolated per-instance. For true distributed rate limiting, layer a WAF or Redis-backed solution upstream.
+- **Two-Tier Reality (Out of the Box)**: Because the heuristic engine now returns a strict `0.5` confidence for single pattern matches and the default block threshold is `0.5`, the middleware effectively operates as a strict two-tier system (Benign `0.0` or Blocked `0.5+`). The "ambiguous zone" (`0.2` to `0.49`) is practically empty. This means the **ML Bridge and Rate Limiter escalation will never fire by default**. If you want to use the three-tier architecture, you must manually raise the `threshold` option to `0.6` or higher so that single-pattern heuristic matches fall into the ambiguous zone.
 - **ML Bridge is a Reference Implementation**: The architecture for querying an ML model is real and fully functional, but the included Python "AI" half is currently a **stub / proof-of-concept**. If you enable the `mlEndpoint`, you are expected to bring your own trained, production-ready model. The out-of-the-box Python script is for demonstration purposes only.
 
 ---
