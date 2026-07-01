@@ -45,6 +45,29 @@ describe('Detector', () => {
     expect(result.confidence).toBeGreaterThan(0);
   });
 
+  test('should detect legacy unicode-escaped XSS payloads', () => {
+    const result = detector.detect('%u003Cscript%u003Ealert(1)%u003C/script%u003E');
+    expect(result.label).toBe('xss');
+    expect(result.confidence).toBeGreaterThan(0);
+  });
+
+  test('should detect control-character split XSS payloads', () => {
+    const result = detector.detect('java\u0000script:alert(1)');
+    expect(result.label).toBe('xss');
+    expect(result.confidence).toBeGreaterThan(0);
+  });
+
+  test('should detect plus-separated SQLi payloads', () => {
+    const result = detector.detect('UNION+SELECT+password+FROM+users');
+    expect(result.label).toBe('sqli');
+    expect(result.confidence).toBeGreaterThan(0);
+  });
+
+  test('should detect HTML entity encoded XSS payloads', () => {
+    expect(detector.detect('&#x3c;script&#x3e;alert(1)&#x3c;/script&#x3e;').label).toBe('xss');
+    expect(detector.detect('&lt;script&gt;alert(1)&lt;/script&gt;').label).toBe('xss');
+  });
+
   test('should detect comment-terminated auth bypasses', () => {
     expect(detector.detect("admin'--").label).toBe('sqli');
     expect(detector.detect("admin' --").label).toBe('sqli');

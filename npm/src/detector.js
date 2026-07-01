@@ -24,20 +24,35 @@ class Detector {
   decodeDeeply(payload) {
     if (typeof payload !== 'string') return '';
     if (payload.length > 50000) payload = payload.substring(0, 50000);
+    const namedEntities = { lt: '<', gt: '>', quot: '"', apos: "'", amp: '&' };
+    const decodeEntity = (match, hex, dec) => {
+      const code = parseInt(hex || dec, hex ? 16 : 10);
+      return Number.isFinite(code) && code <= 0x10ffff ? String.fromCodePoint(code) : match;
+    };
+    const normalize = (value) => value
+      .replace(/%u([0-9a-fA-F]{4})/g, (_, hex) => String.fromCharCode(parseInt(hex, 16)))
+      .replace(/&#x([0-9a-fA-F]+);?|&#(\d+);?/g, decodeEntity)
+      .replace(/&(lt|gt|quot|apos|amp);/gi, (_, name) => namedEntities[name.toLowerCase()])
+      .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '');
+
     // Iterate decoding to catch multi-layer encoding
-    let decoded = payload;
+    let decoded = normalize(payload);
     let previous = "";
     let iterations = 0;
     while (decoded !== previous && iterations < 5) {
       previous = decoded;
-      try { decoded = decodeURIComponent(decoded); } catch (e) {}
+      try { decoded = normalize(decodeURIComponent(decoded)); } catch (e) { decoded = normalize(decoded); }
       iterations++;
     }
-    if (/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/.test(decoded)) {
+    const base64Candidate = decoded;
+    decoded = decoded.replace(/\+/g, ' ');
+    if (/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/.test(base64Candidate)) {
       try {
-        const b64Decoded = Buffer.from(decoded, 'base64').toString('utf8');
-        if (b64Decoded.length > 0 && b64Decoded !== decoded) {
-          decoded = b64Decoded;
+        const b64Decoded = Buffer.from(base64Candidate, 'base64').toString('utf8');
+        const nonPrintableCount = b64Decoded.replace(/[\t\r\n\x20-\x7E]/g, '').length;
+        const isMostlyPrintable = b64Decoded.length > 0 && nonPrintableCount / b64Decoded.length < 0.1;
+        if (isMostlyPrintable && b64Decoded !== base64Candidate) {
+          decoded += `\n${normalize(b64Decoded).replace(/\+/g, ' ')}`;
         }
       } catch (e) {}
     }

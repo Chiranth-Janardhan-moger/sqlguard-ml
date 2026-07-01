@@ -19,8 +19,7 @@ describe('IPRateLimiter class', () => {
     for (let i = 0; i < 15; i++) {
       limiter.recordSuspicious(`192.168.0.${i}`);
     }
-    // Should have pruned some elements
-    expect(limiter.ips.size).toBeLessThanOrEqual(15);
+    expect(limiter.ips.size).toBe(10);
     expect(limiter.ips.has('192.168.0.0')).toBe(false); // First elements get deleted
   });
 });
@@ -66,5 +65,37 @@ describe('Rate Limiter Middleware Integration', () => {
       message: 'Malicious payload detected by SQLGuard ML',
       details: { label: 'rate_limit_escalation' }
     }));
+  });
+
+  it('should fail closed after the per-request ML call cap', async () => {
+    const realFetch = global.fetch;
+    const mockFetch = jest.fn(async () => ({
+      ok: true,
+      json: async () => ({ label: 'benign' })
+    }));
+    global.fetch = mockFetch;
+
+    const middleware = expressMiddleware({
+      threshold: 0.5,
+      mlEndpoint: 'http://127.0.0.1:8000/api/detect',
+      maxSuspiciousRequests: 999
+    });
+    const req = {
+      ip: '3.3.3.3',
+      body: Object.fromEntries(Array.from({ length: 11 }, (_, i) => [`field${i}`, 'javascript:']))
+    };
+
+    try {
+      await middleware(req, mockRes, mockNext);
+    } finally {
+      global.fetch = realFetch;
+    }
+
+    expect(mockFetch).toHaveBeenCalledTimes(10);
+    expect(mockRes.status).toHaveBeenCalledWith(403);
+    expect(mockRes.json).toHaveBeenCalledWith(expect.objectContaining({
+      details: { label: 'rate_limit_sqli_heuristic' }
+    }));
+    expect(mockNext).not.toHaveBeenCalled();
   });
 });
