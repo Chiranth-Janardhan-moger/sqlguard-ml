@@ -1,8 +1,8 @@
-# 🚀 Launching SQLGuard-ML v1.2.3: The Production-Ready Express WAF
+# 🚀 Launching SQLGuard-ML v1.2.4: The Production-Ready Express WAF
 
 Hey everyone,
 
-I'm excited to announce the release of **SQLGuard-ML v1.2.3**! 🎉 
+I'm excited to announce the release of **SQLGuard-ML v1.2.4**! 🎉 
 
 When I first started this project, the goal was simple: stop SQL Injection and XSS before it hits the database. Over the past few days, the project underwent a massive security audit and complete architectural overhaul to transition from an experimental package into a hardened, production-grade Web Application Firewall (WAF) for Express.js.
 

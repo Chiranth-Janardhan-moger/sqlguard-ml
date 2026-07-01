@@ -3,13 +3,14 @@ const { IPRateLimiter } = require('./rateLimiter');
 class Detector {
   constructor() {
     this.sqliPatterns = [
-      // Fixed: Removed bare single quote. Using more robust patterns.
-      /(?:\b(?:OR|AND)\b\s+['"\d\w]+\s*[=<>]\s*['"\d\w]+)/i,
-      /\b(?:UNION\s+(?:ALL\s+)?SELECT|DROP\s+TABLE|INSERT\s+INTO|UPDATE\s+\w+\s+SET)\b/i,
+      /(?:['";\)]\s*\b(?:OR|AND)\b\s+[\w\d'"]+\s*[=<>])/i,
+      /\bUNION\s+(?:ALL\s+)?SELECT\b/i,
+      /(?:;\s*\bDROP\s+TABLE\b|\bDROP\s+TABLE\s+\w+\s*;)/i,
+      /\bINSERT\s+INTO\s+\w+\s*(?:\([^)]*\)\s*)?VALUES/i,
+      /\bUPDATE\s+\w+\s+SET\s+\w+\s*=/i,
       /;\s*(?:SLEEP|DELAY|WAITFOR)\s*(?:\(|\s)/i,
       /(?:\$where|\$ne|\$gt|\$lt|\$gte|\$lte|\$in|\$nin|\$regex)/i,
       /['"]\s*=\s*['"]/i,
-      // Catch comment-terminated auth bypasses (e.g., admin'--, admin' #)
       /(?:['"]\s*(?:--|#)(?:\s|$))/i
     ];
     this.xssPatterns = [
@@ -66,7 +67,7 @@ class Detector {
     const sqliScore = this.sqliPatterns.filter(p => p.test(decodedPayload)).length;
     const xssScore = this.xssPatterns.filter(p => p.test(decodedPayload)).length;
     const maxScore = Math.max(sqliScore, xssScore);
-    const confidence = Math.min(1.0, maxScore * 0.35);
+    const confidence = Math.min(1.0, maxScore * 0.5);
     const label = sqliScore > xssScore ? 'sqli' : xssScore > 0 ? 'xss' : 'benign';
     return { label, confidence, scores: { sqli: sqliScore, xss: xssScore } };
   }

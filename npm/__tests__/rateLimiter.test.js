@@ -37,7 +37,7 @@ describe('Rate Limiter Middleware Integration', () => {
   });
 
   it('should block an IP after multiple ambiguous payloads', async () => {
-    const middleware = expressMiddleware({ maxSuspiciousRequests: 3 });
+    const middleware = expressMiddleware({ maxSuspiciousRequests: 3, threshold: 0.6 });
     const req = {
       ip: '2.2.2.2',
       query: { q: 'union' } // 'union' scores 0.35 if it hits some sub-heuristic or 0.2? Wait, the regex is union select. 
@@ -76,7 +76,7 @@ describe('Rate Limiter Middleware Integration', () => {
     global.fetch = mockFetch;
 
     const middleware = expressMiddleware({
-      threshold: 0.5,
+      threshold: 0.6,
       mlEndpoint: 'http://127.0.0.1:8000/api/detect',
       maxSuspiciousRequests: 999
     });
