@@ -13,7 +13,7 @@ class Detector {
       /(?:['"]\s*(?:--|#)(?:\s|$))/i
     ];
     this.xssPatterns = [
-      /<script\b[^>]*>([\s\S]*?)<\/script>/i,
+      /<script\b/i,
       /<[^>]+(on\w+)\s*=/i,
       /javascript:/i,
       /<(?:iframe|object|embed|applet)\b/i

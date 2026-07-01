@@ -30,9 +30,13 @@ The Node.js package (`npm`) operates using a fast heuristic (regex-based) scanne
 - **Deep Payload Decoding**: Unravels multi-layer URL encoding, Hex, and Base64 payloads before scanning to catch obfuscated attacks.
 - **Express.js Middleware**: Plug-and-play middleware that automatically scans `req.query`, `req.body`, and `req.headers`.
 - **Intelligent Header Scanning**: Deeply scans headers like `User-Agent`, `Referer`, and `X-Forwarded-For`, as well as raw text buffers to catch evasion attempts.
-- **IP Reputation & Rate Limiting**: Tracks IP behavior with a sliding window to escalate suspicion if an attacker spams multiple borderline/ambiguous payloads.
+- **IP Reputation & Rate Limiting**: Tracks IP behavior with a sliding window to escalate suspicion if an attacker spams multiple borderline/ambiguous payloads. *(Note: This uses an in-memory Map, so state resets on server restart and is not shared across Node.js clusters/Kubernetes pods).*
 - **ReDoS Protection**: Enforces strict payload length caps to prevent Regular Expression Denial of Service.
 - **Comment Stripping**: Removes SQL inline comments to prevent common obfuscation bypasses (e.g. `UN/**/ION`).
+
+## Architectural Limitations
+
+- **Rate Limiting State**: The IP rate limiter runs in-process. In a distributed environment (e.g., PM2 clusters, Kubernetes), rate-limit state is isolated per-instance. For true distributed rate limiting, consider layering a WAF or Redis-backed solution upstream.
 
 ---
 
