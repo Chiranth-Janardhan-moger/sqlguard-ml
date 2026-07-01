@@ -34,9 +34,10 @@ The Node.js package (`npm`) operates using a fast heuristic (regex-based) scanne
 - **ReDoS Protection**: Enforces strict payload length caps to prevent Regular Expression Denial of Service.
 - **Comment Stripping**: Removes SQL inline comments to prevent common obfuscation bypasses (e.g. `UN/**/ION`).
 
-## Architectural Limitations
+## Architectural Limitations (Please Read)
 
-- **Rate Limiting State**: The IP rate limiter runs in-process. In a distributed environment (e.g., PM2 clusters, Kubernetes), rate-limit state is isolated per-instance. For true distributed rate limiting, consider layering a WAF or Redis-backed solution upstream.
+- **Rate Limiting in PM2/Kubernetes**: The IP rate limiter runs in-process via an in-memory Map. This means it **resets on every server restart** and **does not share state across multiple Node processes**. If you are running PM2 clusters, Kubernetes pods, or any multi-instance deployment, rate limiting will be silently isolated per-instance. For true distributed rate limiting, layer a WAF or Redis-backed solution upstream.
+- **ML Bridge is a Reference Implementation**: The architecture for querying an ML model is real and fully functional, but the included Python "AI" half is currently a **stub / proof-of-concept**. If you enable the `mlEndpoint`, you are expected to bring your own trained, production-ready model. The out-of-the-box Python script is for demonstration purposes only.
 
 ---
 
