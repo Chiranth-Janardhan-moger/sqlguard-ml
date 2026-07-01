@@ -9,9 +9,7 @@ class IPRateLimiter {
     const now = Date.now();
     if (!this.ips.has(ip)) {
       if (this.ips.size >= this.maxCapacity) {
-        // Simple cleanup: remove oldest 10%
-        const keysToDelete = Array.from(this.ips.keys()).slice(0, Math.floor(this.maxCapacity / 10));
-        keysToDelete.forEach(k => this.ips.delete(k));
+        this.ips.delete(this.ips.keys().next().value);
       }
       this.ips.set(ip, []);
     }
@@ -23,15 +21,7 @@ class IPRateLimiter {
     this.ips.set(ip, validTimestamps);
     return validTimestamps.length;
   }
-  
-  getCount(ip) {
-    if (!this.ips.has(ip)) return 0;
-    const now = Date.now();
-    const timestamps = this.ips.get(ip);
-    const validTimestamps = timestamps.filter(t => now - t < this.windowMs);
-    this.ips.set(ip, validTimestamps);
-    return validTimestamps.length;
-  }
+
 }
 
 module.exports = { IPRateLimiter };

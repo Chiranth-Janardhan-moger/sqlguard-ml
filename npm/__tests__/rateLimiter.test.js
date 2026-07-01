@@ -4,14 +4,13 @@ const { IPRateLimiter } = require('../src/rateLimiter');
 describe('IPRateLimiter class', () => {
   it('should clean up old timestamps based on windowMs', () => {
     const limiter = new IPRateLimiter(100, 1000);
-    limiter.recordSuspicious('1.1.1.1');
-    expect(limiter.getCount('1.1.1.1')).toBe(1);
+    expect(limiter.recordSuspicious('1.1.1.1')).toBe(1);
     
     // mock date
     const realDateNow = Date.now.bind(global.Date);
     global.Date.now = jest.fn(() => realDateNow() + 200);
     
-    expect(limiter.getCount('1.1.1.1')).toBe(0);
+    expect(limiter.recordSuspicious('1.1.1.1')).toBe(1);
     global.Date.now = realDateNow;
   });
 

@@ -102,10 +102,7 @@ function expressMiddleware(options = {}) {
               });
               if (mlRes.ok) {
                 const mlData = await mlRes.json();
-                if (mlData.prediction && mlData.prediction !== 'benign') {
-                  isMalicious = true;
-                  finalLabel = mlData.prediction;
-                } else if (mlData.label && mlData.label !== 'benign') {
+                if (mlData.label && mlData.label !== 'benign') {
                   isMalicious = true;
                   finalLabel = mlData.label;
                 }
@@ -132,11 +129,10 @@ function expressMiddleware(options = {}) {
          return { isMalicious: true, label: 'dos' };
       }
 
-      for (const key of Object.keys(obj)) {
+      for (const [key, val] of Object.entries(obj)) {
         const keyAttack = await scanString(key);
         if (keyAttack) return keyAttack;
 
-        const val = obj[key];
         if (typeof val === 'string') {
           const valAttack = await scanString(val);
           if (valAttack) return valAttack;

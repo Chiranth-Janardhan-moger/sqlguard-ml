@@ -45,15 +45,14 @@ async def detect(req: DetectRequest):
         probs = ml_model.predict_proba(X)[0]
         classes = ml_model.classes_
         
-        max_prob = max(probs)
-        label = classes[list(probs).index(max_prob)]
+        label = classes[probs.argmax()]
         
         is_malicious = label != "benign"
         
         return DetectResponse(
             label=label,
             is_malicious=is_malicious,
-            confidence=float(max_prob)
+            confidence=float(probs.max())
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
